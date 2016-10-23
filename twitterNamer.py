@@ -13,6 +13,8 @@ def checkParam(parm):
 
 def isAccessible(url):
     "Check if linke is accessible"
+    logging.debug('checking url: ' + url)
+
     if requests.get(url).status_code == 404:
         return False
     return True
@@ -22,6 +24,17 @@ def configLog(debug):
     logfile = os.path.basename(__file__).replace('.py', '.log') if debug == True else None
     loglevel = logging.DEBUG if logfile is not None else None
     logging.basicConfig(format='%(asctime)s [%(levelname)8s][%(module)18s][Line %(lineno)3d] %(message)s', filename=logfile, level=loglevel)
+
+def generateLuckyName(url):
+    "Generate an available name randomly"
+    while True:
+        luckyName = requests.get('http://www.shittyusernames.com/api/get-username').text
+        logging.debug('luckyName: ' + luckyName)
+        if not isAccessible(url + luckyName):
+            if len(luckyName) <= 15:
+                print('No available username according to your inputs. But don\'t be sad...')
+                print('Found a lucky name for you: ' + luckyName)
+                sys.exit(1)
 
 # Setup parameter
 #   run script with -d, active debug mode (log file will be created)
@@ -54,15 +67,14 @@ params = {
 }
 #   remove None value item
 params = dict((k, v) for k, v in params.items() if v)
-logging.debug('url:\n' + url)
-logging.debug('twitter url:\n' + turl)
-logging.debug('params:\n' + str(params))
+logging.debug('url: ' + url)
+logging.debug('twitter url: ' + turl)
+logging.debug('params: ' + str(params))
 
 # Create http request
 r = requests.post(url, data=params)
 if r.status_code != 200:
-    logging.critical('Server error code: ' + str(r.status_code))
-    sys.exit(1)
+    generateLuckyName(turl)
 
 nameList = []
 for n in json.loads(r.text):
@@ -72,4 +84,4 @@ for n in json.loads(r.text):
                 nameList.append(n)
 
 # Print results
-print('\n'.join(nameList)) if len(nameList) > 0 else print("No available username")
+print('\n'.join(nameList)) if len(nameList) > 0 else generateLuckyName(turl)
